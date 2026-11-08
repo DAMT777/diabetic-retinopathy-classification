@@ -1,0 +1,32 @@
+# Entornos virtuales (se recrean con requirements.txt)
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dataset completo y derivados: pesan mucho y APTOS 2019 se descarga de Kaggle.
+# Las imagenes de ejemplo de retinopatia-app/ejemplos/ si se suben.
+prueba_384/
+train_images/
+test_images/
+*.zip
+
+# Credenciales
+kaggle.json
+.env
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.log
