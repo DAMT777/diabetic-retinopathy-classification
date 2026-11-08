@@ -2,12 +2,13 @@
 
 // Límite igual al del servidor, para avisar antes de enviar.
 const TAMANO_MAXIMO = 15 * 1024 * 1024;
+const NIVELES = ["Sin RD", "Leve", "Moderada", "Severa", "Proliferativa"];
+const INDICE_REFERIBLE = 2;
 
 const el = (id) => document.getElementById(id);
 const zonaCarga = el("zona-carga");
 const entradaArchivo = el("entrada-archivo");
 const vistaPrevia = el("vista-previa");
-const zonaTexto = el("zona-texto");
 const galeria = el("galeria");
 
 const ESTADOS = ["estado-inicial", "estado-analizando", "estado-resultado", "estado-error"];
@@ -32,15 +33,30 @@ function mostrarError(mensaje) {
   mostrarEstado("estado-error");
 }
 
+// En una sola columna el resultado queda debajo; se lleva la vista hasta él.
+function enfocarResultado() {
+  if (window.matchMedia("(max-width: 860px)").matches) {
+    el("panel-resultado").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function marcarEjemplo(nombre) {
+  galeria.querySelectorAll(".ejemplo").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.nombre === nombre));
+  });
+}
+
 function reiniciar() {
   if (urlPrevia) URL.revokeObjectURL(urlPrevia);
   urlPrevia = null;
-  vistaPrevia.hidden = true;
   vistaPrevia.removeAttribute("src");
-  zonaTexto.hidden = false;
+  el("zona-cargada").hidden = true;
+  el("zona-vacia").hidden = false;
   entradaArchivo.value = "";
+  marcarEjemplo(null);
   mostrarEstado("estado-inicial");
-  zonaCarga.focus();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  zonaCarga.focus({ preventScroll: true });
 }
 
 // ---------- Vista previa ----------
@@ -50,8 +66,9 @@ function mostrarVistaPrevia(archivo) {
   if (urlPrevia) URL.revokeObjectURL(urlPrevia);
   urlPrevia = URL.createObjectURL(archivo);
   vistaPrevia.src = urlPrevia;
-  vistaPrevia.hidden = false;
-  zonaTexto.hidden = true;
+  el("nombre-archivo").textContent = archivo.name;
+  el("zona-vacia").hidden = true;
+  el("zona-cargada").hidden = false;
 }
 
 // ---------- Validación y envío ----------
@@ -66,12 +83,14 @@ async function analizar(archivo) {
   const problema = validarArchivo(archivo);
   if (problema) {
     mostrarError(problema);
+    enfocarResultado();
     return;
   }
 
   mostrarVistaPrevia(archivo);
   mostrarEstado("estado-analizando");
   bloquearControles(true);
+  enfocarResultado();
 
   const formulario = new FormData();
   formulario.append("archivo", archivo); // sin Content-Type manual: el navegador fija el boundary
@@ -97,6 +116,13 @@ function formatearPorcentaje(valor) {
   return (valor * 100).toFixed(1) + "%";
 }
 
+// Las barras se crean en 0 y crecen en el siguiente cuadro, para animar la transición.
+function animarAncho(elemento, porcentaje) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    elemento.style.width = porcentaje;
+  }));
+}
+
 function construirBarras(probabilidades, indicePredicho) {
   const contenedor = el("barras");
   contenedor.replaceChildren();
@@ -114,8 +140,8 @@ function construirBarras(probabilidades, indicePredicho) {
     pista.className = "pista";
     const relleno = document.createElement("div");
     relleno.className = "relleno";
-    relleno.style.width = (p.probabilidad * 100).toFixed(2) + "%";
     pista.appendChild(relleno);
+    animarAncho(relleno, (p.probabilidad * 100).toFixed(2) + "%");
 
     const porcentaje = document.createElement("span");
     porcentaje.className = "porcentaje";
@@ -124,6 +150,40 @@ function construirBarras(probabilidades, indicePredicho) {
     fila.append(nombre, pista, porcentaje);
     contenedor.appendChild(fila);
   });
+}
+
+// Escala de 5 niveles con la posición de la predicción y del diagnóstico real.
+function construirEscala(contenedor, indicePredicho, indiceReal) {
+  contenedor.replaceChildren();
+  NIVELES.forEach((nombre, i) => {
+    const columna = document.createElement("div");
+
+    const segmento = document.createElement("div");
+    segmento.className = "segmento";
+    if (i === indicePredicho) segmento.classList.add("predicho");
+    if (i === indiceReal) segmento.classList.add("es-real");
+    segmento.textContent = nombre;
+
+    const marcas = document.createElement("div");
+    marcas.className = "marcas";
+    if (i === indicePredicho) marcas.appendChild(crearMarca("Modelo"));
+    if (i === indiceReal) marcas.appendChild(crearMarca("Real"));
+
+    columna.append(segmento, marcas);
+    contenedor.appendChild(columna);
+  });
+
+  const zona = document.createElement("div");
+  zona.className = "zona-referible";
+  zona.textContent = "Referible";
+  contenedor.appendChild(zona);
+}
+
+function crearMarca(texto) {
+  const marca = document.createElement("span");
+  marca.className = "marca";
+  marca.textContent = texto;
+  return marca;
 }
 
 function mostrarReferible(referible) {
@@ -135,23 +195,28 @@ function mostrarReferible(referible) {
 function mostrarDiagnosticoReal(real, coincide) {
   const parrafo = el("diagnostico-real");
   parrafo.replaceChildren();
+  parrafo.className = "real";
   if (real === null || real === undefined) {
     parrafo.hidden = true;
     return;
   }
   const valor = document.createElement("strong");
   valor.textContent = real;
-  const nota = coincide ? " (coincide con la predicción)" : " (no coincide con la predicción)";
-  parrafo.append("Diagnóstico real: ", valor, nota);
+  parrafo.classList.add(coincide ? "acierto" : "fallo");
+  parrafo.append("Diagnóstico real: ", valor, coincide ? ". Coincide con la predicción." : ". No coincide con la predicción.");
   parrafo.hidden = false;
 }
 
 function mostrarResultado(datos) {
   el("prediccion-nombre").textContent = datos.prediccion;
-  el("prediccion-confianza").textContent = formatearPorcentaje(datos.confianza);
   mostrarReferible(datos.referible);
   mostrarDiagnosticoReal(datos.real, datos.coincide);
+
+  const indiceReal = datos.real ? NIVELES.indexOf(datos.real) : -1;
+  construirEscala(el("escala"), datos.indice, indiceReal);
   construirBarras(datos.probabilidades, datos.indice);
+
+  el("imagen-original").src = urlPrevia;
   el("imagen-modelo").src = datos.imagen_modelo;
   mostrarEstado("estado-resultado");
 }
@@ -159,6 +224,7 @@ function mostrarResultado(datos) {
 // ---------- Galería de ejemplos ----------
 
 async function analizarEjemplo(nombre) {
+  marcarEjemplo(nombre);
   try {
     const respuesta = await fetch("/ejemplos/" + encodeURIComponent(nombre));
     if (!respuesta.ok) throw new Error();
@@ -174,6 +240,8 @@ function crearMiniatura(ejemplo) {
   const boton = document.createElement("button");
   boton.type = "button";
   boton.className = "ejemplo";
+  boton.dataset.nombre = ejemplo.nombre;
+  boton.setAttribute("aria-pressed", "false");
 
   const img = document.createElement("img");
   img.src = "/ejemplos/" + encodeURIComponent(ejemplo.nombre);
@@ -206,7 +274,10 @@ async function cargarGaleria() {
 
 function configurarZonaCarga() {
   entradaArchivo.addEventListener("change", () => {
-    if (entradaArchivo.files.length) analizar(entradaArchivo.files[0]);
+    if (entradaArchivo.files.length) {
+      marcarEjemplo(null);
+      analizar(entradaArchivo.files[0]);
+    }
   });
 
   // Teclado: Enter o Espacio abren el selector de archivos.
@@ -228,7 +299,10 @@ function configurarZonaCarga() {
   }));
   zonaCarga.addEventListener("drop", (evento) => {
     const archivo = evento.dataTransfer.files[0];
-    if (archivo && !entradaArchivo.disabled) analizar(archivo);
+    if (archivo && !entradaArchivo.disabled) {
+      marcarEjemplo(null);
+      analizar(archivo);
+    }
   });
 }
 
@@ -236,6 +310,7 @@ function configurarZonaCarga() {
 
 document.addEventListener("DOMContentLoaded", () => {
   configurarZonaCarga();
+  construirEscala(el("escala-inicial"), -1, -1);
   el("boton-otra").addEventListener("click", reiniciar);
   el("boton-reintentar").addEventListener("click", reiniciar);
   cargarGaleria();

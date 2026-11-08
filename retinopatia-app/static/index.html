@@ -8,38 +8,60 @@
 </head>
 <body>
   <header class="encabezado">
-    <div class="contenedor">
-      <h1>Clasificación de retinopatía diabética</h1>
-      <p>Sube una imagen de fondo de ojo y el modelo estimará el nivel de retinopatía según la escala clínica internacional.</p>
+    <div class="contenedor encabezado-interior">
+      <div>
+        <h1>Clasificación de retinopatía diabética</h1>
+        <p>Sube una imagen de fondo de ojo y el modelo estimará el nivel de retinopatía según la escala clínica internacional.</p>
+      </div>
     </div>
   </header>
 
   <main class="contenedor principal">
     <!-- Panel de carga -->
-    <section class="panel" aria-labelledby="titulo-carga">
-      <h2 id="titulo-carga">Imagen</h2>
+    <section class="panel panel-carga" aria-labelledby="titulo-carga">
+      <p class="paso">Paso 1</p>
+      <h2 id="titulo-carga">Elige una imagen</h2>
 
       <label class="zona-carga" id="zona-carga" tabindex="0">
         <input type="file" id="entrada-archivo" accept="image/*" class="oculto">
-        <span class="zona-texto" id="zona-texto">Haz clic o arrastra una imagen de fondo de ojo</span>
-        <img id="vista-previa" class="vista-previa" alt="Vista previa de la imagen cargada" hidden>
+        <span class="zona-vacia" id="zona-vacia">
+          <span class="zona-titulo">Haz clic o arrastra una imagen de fondo de ojo</span>
+          <span class="zona-sub">También puedes pulsar Enter para buscarla en tu equipo</span>
+        </span>
+        <span class="zona-cargada" id="zona-cargada" hidden>
+          <img id="vista-previa" class="vista-previa" alt="Vista previa de la imagen cargada">
+          <span class="zona-info">
+            <span class="nombre-archivo" id="nombre-archivo"></span>
+            <span class="enlace">Cambiar imagen</span>
+          </span>
+        </span>
       </label>
-      <p class="ayuda">Formatos aceptados: JPG, PNG, BMP, TIFF y otros formatos de imagen. Tamaño máximo: 15 MB.</p>
+      <p class="ayuda">JPG, PNG, BMP, TIFF y otros formatos de imagen. Máximo 15 MB.</p>
 
-      <h3 class="subtitulo">Ejemplos del conjunto de prueba</h3>
+      <div class="separador"><span>o prueba con un ejemplo</span></div>
+
+      <p class="texto-suave pequeno">Diez imágenes del conjunto de prueba, dos por nivel. Debajo de cada una está su diagnóstico real.</p>
       <div class="galeria" id="galeria" aria-label="Ejemplos del conjunto de prueba"></div>
     </section>
 
     <!-- Panel de resultado -->
-    <section class="panel" aria-labelledby="titulo-resultado" aria-live="polite">
+    <section class="panel panel-resultado" id="panel-resultado" aria-labelledby="titulo-resultado" aria-live="polite">
+      <p class="paso">Paso 2</p>
       <h2 id="titulo-resultado">Resultado</h2>
 
       <div class="estado" id="estado-inicial">
         <p class="texto-suave">Carga una imagen o elige uno de los ejemplos para ver el nivel de retinopatía estimado.</p>
+        <ol class="pasos">
+          <li><strong>Carga</strong><span>Sube una foto de fondo de ojo o elige un ejemplo.</span></li>
+          <li><strong>Preprocesamiento</strong><span>La imagen se recorta, se lleva a 384 por 384 píxeles y se normaliza su color.</span></li>
+          <li><strong>Lectura</strong><span>Revisa el nivel estimado, la probabilidad de cada nivel y si el caso es referible.</span></li>
+        </ol>
+        <div class="escala escala-vacia" id="escala-inicial" aria-hidden="true"></div>
       </div>
 
       <div class="estado" id="estado-analizando" hidden>
-        <p>Analizando la imagen...</p>
+        <p class="analizando-titulo">Analizando la imagen...</p>
+        <p class="texto-suave pequeno">Recortando, normalizando el color y ejecutando el modelo.</p>
         <div class="progreso" role="progressbar" aria-label="Analizando la imagen"><div class="progreso-barra"></div></div>
       </div>
 
@@ -49,18 +71,35 @@
       </div>
 
       <div class="estado" id="estado-resultado" hidden>
-        <p class="etiqueta-nivel">Nivel estimado</p>
-        <p class="prediccion"><span id="prediccion-nombre"></span> <span class="confianza" id="prediccion-confianza"></span></p>
-        <p class="pastilla" id="referible"></p>
+        <div class="resumen">
+          <div class="resumen-texto">
+            <p class="etiqueta-nivel">Nivel estimado</p>
+            <p class="prediccion" id="prediccion-nombre"></p>
+            <p class="pastilla" id="referible"></p>
+          </div>
+        </div>
         <p class="real" id="diagnostico-real" hidden></p>
+
+        <h3 class="subtitulo">Posición en la escala</h3>
+        <div class="escala" id="escala"></div>
 
         <h3 class="subtitulo">Probabilidad por nivel</h3>
         <div class="barras" id="barras"></div>
 
         <h3 class="subtitulo">Lo que ve el modelo</h3>
-        <p class="texto-suave pequeno">Es la imagen después del preprocesamiento: recortada, cuadrada, de 384 por 384 píxeles y con el color normalizado para resaltar lesiones.</p>
-        <img id="imagen-modelo" class="imagen-modelo" alt="Imagen de fondo de ojo después del preprocesamiento que recibe el modelo">
+        <p class="texto-suave pequeno">A la derecha está la imagen después del preprocesamiento: recortada, cuadrada, de 384 por 384 píxeles y con el color normalizado para resaltar lesiones.</p>
+        <div class="comparacion">
+          <figure>
+            <img id="imagen-original" alt="Imagen de fondo de ojo tal como se cargó">
+            <figcaption>Imagen cargada</figcaption>
+          </figure>
+          <figure>
+            <img id="imagen-modelo" alt="Imagen de fondo de ojo después del preprocesamiento que recibe el modelo">
+            <figcaption>Lo que ve el modelo</figcaption>
+          </figure>
+        </div>
 
+        <p class="nota-confianza">El modelo tiende a dar probabilidades demasiado altas: una confianza alta no garantiza que la predicción sea correcta.</p>
         <button type="button" class="boton" id="boton-otra">Analizar otra imagen</button>
       </div>
     </section>
@@ -70,11 +109,11 @@
     <details class="panel guia">
       <summary>Cómo leer el resultado</summary>
       <dl class="niveles">
-        <dt>Sin RD</dt><dd>No se observan signos de retinopatía.</dd>
-        <dt>Leve</dt><dd>Solo microaneurismas, pequeños puntos rojos en la retina.</dd>
-        <dt>Moderada</dt><dd>Hemorragias y exudados más numerosos.</dd>
-        <dt>Severa</dt><dd>Lesiones extensas en toda la retina y zonas con mala irrigación.</dd>
-        <dt>Proliferativa</dt><dd>Crecimiento de vasos sanguíneos anormales; riesgo de pérdida de visión.</dd>
+        <div class="nivel"><dt><span class="nivel-num">0</span>Sin RD</dt><dd>No se observan signos de retinopatía.</dd></div>
+        <div class="nivel"><dt><span class="nivel-num">1</span>Leve</dt><dd>Solo microaneurismas, pequeños puntos rojos en la retina.</dd></div>
+        <div class="nivel referible"><dt><span class="nivel-num">2</span>Moderada</dt><dd>Hemorragias y exudados más numerosos.</dd></div>
+        <div class="nivel referible"><dt><span class="nivel-num">3</span>Severa</dt><dd>Lesiones extensas en toda la retina y zonas con mala irrigación.</dd></div>
+        <div class="nivel referible"><dt><span class="nivel-num">4</span>Proliferativa</dt><dd>Crecimiento de vasos sanguíneos anormales; riesgo de pérdida de visión.</dd></div>
       </dl>
       <p>Se considera <strong>referible</strong> la retinopatía Moderada o más grave: en esos casos se recomienda derivar al paciente al oftalmólogo. Sin RD y Leve corresponden a control de rutina.</p>
     </details>
