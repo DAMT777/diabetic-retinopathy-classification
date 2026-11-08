@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clasificación de retinopatía diabética</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="encabezado">
+    <div class="contenedor">
+      <h1>Clasificación de retinopatía diabética</h1>
+      <p>Sube una imagen de fondo de ojo y el modelo estimará el nivel de retinopatía según la escala clínica internacional.</p>
+    </div>
+  </header>
+
+  <main class="contenedor principal">
+    <!-- Panel de carga -->
+    <section class="panel" aria-labelledby="titulo-carga">
+      <h2 id="titulo-carga">Imagen</h2>
+
+      <label class="zona-carga" id="zona-carga" tabindex="0">
+        <input type="file" id="entrada-archivo" accept="image/*" class="oculto">
+        <span class="zona-texto" id="zona-texto">Haz clic o arrastra una imagen de fondo de ojo</span>
+        <img id="vista-previa" class="vista-previa" alt="Vista previa de la imagen cargada" hidden>
+      </label>
+      <p class="ayuda">Formatos aceptados: JPG, PNG, BMP, TIFF y otros formatos de imagen. Tamaño máximo: 15 MB.</p>
+
+      <h3 class="subtitulo">Ejemplos del conjunto de prueba</h3>
+      <div class="galeria" id="galeria" aria-label="Ejemplos del conjunto de prueba"></div>
+    </section>
+
+    <!-- Panel de resultado -->
+    <section class="panel" aria-labelledby="titulo-resultado" aria-live="polite">
+      <h2 id="titulo-resultado">Resultado</h2>
+
+      <div class="estado" id="estado-inicial">
+        <p class="texto-suave">Carga una imagen o elige uno de los ejemplos para ver el nivel de retinopatía estimado.</p>
+      </div>
+
+      <div class="estado" id="estado-analizando" hidden>
+        <p>Analizando la imagen...</p>
+        <div class="progreso" role="progressbar" aria-label="Analizando la imagen"><div class="progreso-barra"></div></div>
+      </div>
+
+      <div class="estado" id="estado-error" hidden>
+        <p class="mensaje-error" id="mensaje-error"></p>
+        <button type="button" class="boton" id="boton-reintentar">Intentar de nuevo</button>
+      </div>
+
+      <div class="estado" id="estado-resultado" hidden>
+        <p class="etiqueta-nivel">Nivel estimado</p>
+        <p class="prediccion"><span id="prediccion-nombre"></span> <span class="confianza" id="prediccion-confianza"></span></p>
+        <p class="pastilla" id="referible"></p>
+        <p class="real" id="diagnostico-real" hidden></p>
+
+        <h3 class="subtitulo">Probabilidad por nivel</h3>
+        <div class="barras" id="barras"></div>
+
+        <h3 class="subtitulo">Lo que ve el modelo</h3>
+        <p class="texto-suave pequeno">Es la imagen después del preprocesamiento: recortada, cuadrada, de 384 por 384 píxeles y con el color normalizado para resaltar lesiones.</p>
+        <img id="imagen-modelo" class="imagen-modelo" alt="Imagen de fondo de ojo después del preprocesamiento que recibe el modelo">
+
+        <button type="button" class="boton" id="boton-otra">Analizar otra imagen</button>
+      </div>
+    </section>
+  </main>
+
+  <section class="contenedor">
+    <details class="panel guia">
+      <summary>Cómo leer el resultado</summary>
+      <dl class="niveles">
+        <dt>Sin RD</dt><dd>No se observan signos de retinopatía.</dd>
+        <dt>Leve</dt><dd>Solo microaneurismas, pequeños puntos rojos en la retina.</dd>
+        <dt>Moderada</dt><dd>Hemorragias y exudados más numerosos.</dd>
+        <dt>Severa</dt><dd>Lesiones extensas en toda la retina y zonas con mala irrigación.</dd>
+        <dt>Proliferativa</dt><dd>Crecimiento de vasos sanguíneos anormales; riesgo de pérdida de visión.</dd>
+      </dl>
+      <p>Se considera <strong>referible</strong> la retinopatía Moderada o más grave: en esos casos se recomienda derivar al paciente al oftalmólogo. Sin RD y Leve corresponden a control de rutina.</p>
+    </details>
+  </section>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <p>Herramienta académica; no reemplaza el diagnóstico de un oftalmólogo. Las probabilidades del modelo tienden a ser demasiado altas: un 99% no garantiza que la predicción sea correcta.</p>
+      <p>Modelo EfficientNet-B0 entrenado con el dataset APTOS 2019. Exactitud en el conjunto de prueba: 83%.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

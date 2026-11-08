@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-multipart
+timm
+albumentations
+opencv-python-headless
+numpy
+pandas
