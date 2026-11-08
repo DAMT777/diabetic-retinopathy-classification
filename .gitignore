@@ -30,3 +30,8 @@ kaggle.json
 Thumbs.db
 *.swp
 *.log
+
+# Archivos de ResNet-50 (comparacion de modelos descartada; se conservan solo en local)
+retinopatia-app/modelo/resnet50_final_pesos.pt
+retinopatia-app/datos/metricas.json
+retinopatia-app/datos/predicciones_test_resnet50.csv
