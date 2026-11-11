@@ -3,60 +3,108 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
   <title>Clasificación de retinopatía diabética</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="encabezado">
-    <div class="contenedor encabezado-interior">
-      <div>
-        <h1>Clasificación de retinopatía diabética</h1>
-        <p>Sube una imagen de fondo de ojo y el modelo estimará el nivel de retinopatía según la escala clínica internacional.</p>
+    <div class="contenedor">
+      <div class="encabezado-superior">
+        <p class="marca-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="11" fill="var(--acento)"/>
+            <circle cx="12" cy="12" r="7" fill="var(--fondo)"/>
+            <circle cx="12" cy="12" r="3.5" fill="var(--acento)"/>
+          </svg>
+          RetinoAI
+        </p>
+        <button type="button" class="boton-icono" id="boton-info" aria-label="Cómo leer el resultado" title="Cómo leer el resultado">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/>
+          </svg>
+        </button>
       </div>
+      <h1>Clasificación de retinopatía diabética</h1>
+      <p class="encabezado-sub">Sube una imagen de fondo de ojo y el modelo estimará el nivel de retinopatía según la escala clínica internacional.</p>
     </div>
   </header>
 
   <main class="contenedor principal">
-    <!-- Panel de carga -->
+    <!-- Tarjeta: cargar imagen -->
     <section class="panel panel-carga" aria-labelledby="titulo-carga">
-      <p class="paso">Paso 1</p>
-      <h2 id="titulo-carga">Elige una imagen</h2>
+      <div class="cabecera-tarjeta">
+        <span class="icono-tile" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+          </svg>
+        </span>
+        <div>
+          <h2 id="titulo-carga">1. Cargar imagen</h2>
+          <p class="cabecera-sub">Selecciona una imagen de fondo de ojo.</p>
+        </div>
+      </div>
 
       <label class="zona-carga" id="zona-carga" tabindex="0">
         <input type="file" id="entrada-archivo" accept="image/*" class="oculto">
         <span class="zona-vacia" id="zona-vacia">
-          <span class="zona-titulo">Haz clic o arrastra una imagen de fondo de ojo</span>
-          <span class="zona-sub">También puedes pulsar Enter para buscarla en tu equipo</span>
+          <span class="icono-tile icono-tile-grande" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 16.2A4.6 4.6 0 0 0 17.6 8h-1.7A7.2 7.2 0 1 0 6.6 15.4"/><path d="M12 12.5V21"/><path d="m8.5 15.5 3.5-3.5 3.5 3.5"/>
+            </svg>
+          </span>
+          <span class="zona-titulo">Arrastra y suelta una imagen aquí</span>
+          <span class="chip-accion">Seleccionar imagen</span>
+          <span class="zona-sub">JPG, PNG, BMP, TIFF · Máx. 15 MB</span>
         </span>
         <span class="zona-cargada" id="zona-cargada" hidden>
           <img id="vista-previa" class="vista-previa" alt="Vista previa de la imagen cargada">
           <span class="zona-info">
             <span class="nombre-archivo" id="nombre-archivo"></span>
-            <span class="enlace">Cambiar imagen</span>
+            <span class="metadatos-archivo" id="metadatos-archivo"></span>
+            <span class="zona-acciones">
+              <span class="enlace">Cambiar</span>
+              <button type="button" class="enlace-boton" id="boton-eliminar">Eliminar</button>
+            </span>
           </span>
         </span>
       </label>
-      <p class="ayuda">JPG, PNG, BMP, TIFF y otros formatos de imagen. Máximo 15 MB.</p>
 
-      <div class="separador"><span>o prueba con un ejemplo</span></div>
+      <p class="ayuda">Los formatos y el tamaño se validan antes de enviar la imagen al modelo.</p>
+
+      <div class="separador"><span>Ejemplos del conjunto de prueba</span></div>
 
       <p class="texto-suave pequeno">Diez imágenes del conjunto de prueba, dos por nivel. Debajo de cada una está su diagnóstico real.</p>
       <div class="galeria" id="galeria" aria-label="Ejemplos del conjunto de prueba"></div>
     </section>
 
-    <!-- Panel de resultado -->
+    <!-- Tarjeta: resultado -->
     <section class="panel panel-resultado" id="panel-resultado" aria-labelledby="titulo-resultado" aria-live="polite">
-      <p class="paso">Paso 2</p>
-      <h2 id="titulo-resultado">Resultado</h2>
+      <div class="cabecera-tarjeta">
+        <span class="icono-tile" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/>
+          </svg>
+        </span>
+        <div>
+          <h2 id="titulo-resultado">2. Resultado</h2>
+          <p class="cabecera-sub">Nivel de retinopatía estimado por el modelo.</p>
+        </div>
+      </div>
 
       <div class="estado" id="estado-inicial">
         <p class="texto-suave">Carga una imagen o elige uno de los ejemplos para ver el nivel de retinopatía estimado.</p>
         <ol class="pasos">
-          <li><strong>Carga</strong><span>Sube una foto de fondo de ojo o elige un ejemplo.</span></li>
-          <li><strong>Preprocesamiento</strong><span>La imagen se recorta, se lleva a 384 por 384 píxeles y se normaliza su color.</span></li>
-          <li><strong>Lectura</strong><span>Revisa el nivel estimado, la probabilidad de cada nivel y si el caso es referible.</span></li>
+          <li><strong>Carga</strong><span>Sube una foto de fondo de ojo o elige un ejemplo del conjunto de prueba.</span></li>
+          <li><strong>Preprocesamiento</strong><span>El sistema recorta la imagen, la lleva a 384 por 384 píxeles y normaliza su color.</span></li>
+          <li><strong>Resultado</strong><span>Consulta el nivel estimado, la probabilidad de cada nivel y si el caso es referible.</span></li>
         </ol>
-        <div class="escala escala-vacia" id="escala-inicial" aria-hidden="true"></div>
+        <div class="escala" id="escala-inicial" hidden></div>
       </div>
 
       <div class="estado" id="estado-analizando" hidden>
@@ -67,36 +115,45 @@
 
       <div class="estado" id="estado-error" hidden>
         <p class="mensaje-error" id="mensaje-error"></p>
-        <button type="button" class="boton" id="boton-reintentar">Intentar de nuevo</button>
+        <button type="button" class="boton boton-suave" id="boton-reintentar">Intentar de nuevo</button>
       </div>
 
       <div class="estado" id="estado-resultado" hidden>
-        <div class="resumen">
-          <div class="resumen-texto">
+        <div class="resumen-hero">
+          <span class="icono-tile icono-tile-acento" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/>
+              <path d="M7.8 7.4 10.5 16"/><path d="m16.2 7.4-2.7 8.6"/><path d="M8.2 6h7.6"/>
+            </svg>
+          </span>
+          <div>
             <p class="etiqueta-nivel">Nivel estimado</p>
             <p class="prediccion" id="prediccion-nombre"></p>
             <p class="pastilla" id="referible"></p>
           </div>
         </div>
+
         <p class="real" id="diagnostico-real" hidden></p>
 
-        <h3 class="subtitulo">Posición en la escala</h3>
-        <div class="escala" id="escala"></div>
+        <div class="resultado-cuerpo">
+          <div class="visor-bloque">
+            <div class="visor">
+              <img id="imagen-original" class="activa" alt="Imagen original cargada">
+              <img id="imagen-modelo" alt="Imagen procesada que recibe el modelo">
+            </div>
+            <div class="segmentado" id="selector-vista" role="group" aria-label="Vista de la imagen">
+              <button type="button" class="segmentado-opcion" data-vista="original" aria-pressed="true">Original</button>
+              <button type="button" class="segmentado-opcion" data-vista="modelo" aria-pressed="false">Modelo</button>
+            </div>
+          </div>
 
-        <h3 class="subtitulo">Probabilidad por nivel</h3>
-        <div class="barras" id="barras"></div>
+          <div class="metricas">
+            <h3 class="etiqueta-seccion">Probabilidad por nivel</h3>
+            <div class="barras" id="barras"></div>
 
-        <h3 class="subtitulo">Lo que ve el modelo</h3>
-        <p class="texto-suave pequeno">A la derecha está la imagen después del preprocesamiento: recortada, cuadrada, de 384 por 384 píxeles y con el color normalizado para resaltar lesiones.</p>
-        <div class="comparacion">
-          <figure>
-            <img id="imagen-original" alt="Imagen de fondo de ojo tal como se cargó">
-            <figcaption>Imagen cargada</figcaption>
-          </figure>
-          <figure>
-            <img id="imagen-modelo" alt="Imagen de fondo de ojo después del preprocesamiento que recibe el modelo">
-            <figcaption>Lo que ve el modelo</figcaption>
-          </figure>
+            <h3 class="etiqueta-seccion">Posición en la escala</h3>
+            <div class="escala" id="escala"></div>
+          </div>
         </div>
 
         <p class="nota-confianza">El modelo tiende a dar probabilidades demasiado altas: una confianza alta no garantiza que la predicción sea correcta.</p>
@@ -106,23 +163,34 @@
   </main>
 
   <section class="contenedor">
-    <details class="panel guia">
-      <summary>Cómo leer el resultado</summary>
+    <details class="panel guia" id="guia">
+      <summary>
+        <span class="guia-titulo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acento)" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/>
+          </svg>
+          Cómo leer el resultado
+        </span>
+      </summary>
       <dl class="niveles">
         <div class="nivel"><dt><span class="nivel-num">0</span>Sin RD</dt><dd>No se observan signos de retinopatía.</dd></div>
         <div class="nivel"><dt><span class="nivel-num">1</span>Leve</dt><dd>Solo microaneurismas, pequeños puntos rojos en la retina.</dd></div>
-        <div class="nivel referible"><dt><span class="nivel-num">2</span>Moderada</dt><dd>Hemorragias y exudados más numerosos.</dd></div>
-        <div class="nivel referible"><dt><span class="nivel-num">3</span>Severa</dt><dd>Lesiones extensas en toda la retina y zonas con mala irrigación.</dd></div>
-        <div class="nivel referible"><dt><span class="nivel-num">4</span>Proliferativa</dt><dd>Crecimiento de vasos sanguíneos anormales; riesgo de pérdida de visión.</dd></div>
+        <div class="nivel"><dt><span class="nivel-num">2</span>Moderada</dt><dd>Hemorragias y exudados más numerosos.</dd></div>
+        <div class="nivel"><dt><span class="nivel-num">3</span>Severa</dt><dd>Lesiones extensas en toda la retina y zonas con mala irrigación.</dd></div>
+        <div class="nivel"><dt><span class="nivel-num">4</span>Proliferativa</dt><dd>Crecimiento de vasos sanguíneos anormales; riesgo de pérdida de visión.</dd></div>
       </dl>
-      <p>Se considera <strong>referible</strong> la retinopatía Moderada o más grave: en esos casos se recomienda derivar al paciente al oftalmólogo. Sin RD y Leve corresponden a control de rutina.</p>
+      <div class="guia-texto">
+        <p><strong>Cómo interpretar las probabilidades.</strong> Cada barra muestra la confianza del modelo en ese nivel; la suma de las cinco es 100%. Cuando dos barras vecinas son altas, el modelo dudó entre niveles cercanos de la escala.</p>
+        <p><strong>Qué significa que un caso sea referible.</strong> Desde Moderada (nivel 2) la retinopatía se considera referible: se recomienda derivar al paciente al oftalmólogo. Sin RD y Leve corresponden a control de rutina.</p>
+        <p><strong>Limitaciones.</strong> El modelo es sobreconfiado: muchos de sus errores tienen probabilidades cercanas al 100%, así que un 99% no garantiza que la predicción sea correcta. Los resultados solo son válidos para imágenes de fondo de ojo similares a las del dataset APTOS 2019.</p>
+      </div>
     </details>
   </section>
 
   <footer class="pie">
-    <div class="contenedor">
+    <div class="contenedor pie-interior">
       <p>Herramienta académica; no reemplaza el diagnóstico de un oftalmólogo. Las probabilidades del modelo tienden a ser demasiado altas: un 99% no garantiza que la predicción sea correcta.</p>
-      <p>Modelo EfficientNet-B0 entrenado con el dataset APTOS 2019. Exactitud en el conjunto de prueba: 83%.</p>
+      <p>Modelo EfficientNet-B0 · Dataset APTOS 2019 · Exactitud en el conjunto de prueba: 83%</p>
     </div>
   </footer>
 
