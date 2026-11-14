@@ -157,6 +157,12 @@ function construirBarras(probabilidades, indicePredicho) {
   });
 }
 
+// Guion opcional en los nombres largos: solo se ve si la palabra no cabe en su espacio.
+function conCorte(nombre) {
+  const cortes = { Proliferativa: "Prolife\u00ADrativa", Moderada: "Mode\u00ADrada" };
+  return cortes[nombre] || nombre;
+}
+
 // Escala de 5 niveles con la posición de la predicción y del diagnóstico real.
 function construirEscala(contenedor, indicePredicho, indiceReal) {
   contenedor.replaceChildren();
@@ -167,7 +173,7 @@ function construirEscala(contenedor, indicePredicho, indiceReal) {
     segmento.className = "segmento";
     if (i === indicePredicho) segmento.classList.add("predicho");
     if (i === indiceReal) segmento.classList.add("es-real");
-    segmento.textContent = nombre;
+    segmento.textContent = conCorte(nombre);
 
     const marcas = document.createElement("div");
     marcas.className = "marcas";
@@ -178,10 +184,6 @@ function construirEscala(contenedor, indicePredicho, indiceReal) {
     contenedor.appendChild(columna);
   });
 
-  const zona = document.createElement("div");
-  zona.className = "zona-referible";
-  zona.textContent = "Referible";
-  contenedor.appendChild(zona);
 }
 
 function crearMarca(texto) {
@@ -189,12 +191,6 @@ function crearMarca(texto) {
   marca.className = "marca";
   marca.textContent = texto;
   return marca;
-}
-
-function mostrarReferible(referible) {
-  const pastilla = el("referible");
-  pastilla.textContent = referible ? "Se recomienda derivar al oftalmólogo" : "Control de rutina";
-  pastilla.className = "pastilla " + (referible ? "referible" : "rutina");
 }
 
 function mostrarDiagnosticoReal(real, coincide) {
@@ -214,7 +210,6 @@ function mostrarDiagnosticoReal(real, coincide) {
 
 function mostrarResultado(datos) {
   el("prediccion-nombre").textContent = datos.prediccion;
-  mostrarReferible(datos.referible);
   mostrarDiagnosticoReal(datos.real, datos.coincide);
 
   const indiceReal = datos.real ? NIVELES.indexOf(datos.real) : -1;
@@ -254,7 +249,7 @@ function crearMiniatura(ejemplo) {
   img.loading = "lazy";
 
   const etiqueta = document.createElement("span");
-  etiqueta.textContent = ejemplo.real || "Sin etiqueta";
+  etiqueta.textContent = ejemplo.real ? conCorte(ejemplo.real) : "Sin etiqueta";
 
   boton.append(img, etiqueta);
   boton.addEventListener("click", () => analizarEjemplo(ejemplo.nombre));
@@ -395,6 +390,7 @@ async function cargarMetricas() {
   construirGraficos();
   document.querySelectorAll('input[name="conjunto"]').forEach((r) => r.addEventListener("change", construirSeccionesPorConjunto));
   document.querySelectorAll('input[name="vista-matriz"]').forEach((r) => r.addEventListener("change", construirMatriz));
+  pantallaAngosta.addEventListener("change", construirGraficos);
   el("metricas-cargando").hidden = true;
   el("metricas-contenido").hidden = false;
 }
@@ -422,13 +418,11 @@ function construirFicha() {
     grupo.append(crear("dt", "", titulo), crear("dd", "", valor));
     return grupo;
   }));
-  el("ficha-criterio").textContent = "Criterio de selección: " +
-    m.criterio_seleccion.charAt(0).toLowerCase() + m.criterio_seleccion.slice(1) + ".";
+  el("ficha-criterio").textContent = m.criterio_seleccion + ".";
 
   const vc = m.validacion_cruzada;
-  el("validacion-cruzada").textContent = "Validación cruzada de 2 folds: exactitud de " +
-    formatear(vc.exactitud_media, 3) + " ± " + formatear(vc.exactitud_desv, 3) +
-    ". Con esta validación se seleccionó la arquitectura del proyecto.";
+  el("validacion-cruzada").textContent = "Exactitud de " + formatear(vc.exactitud_media, 3) + " ± " +
+    formatear(vc.exactitud_desv, 3) + " en 2 folds. Con ella se seleccionó la arquitectura del proyecto.";
 }
 
 // ---------- 2 y 3. Tarjetas de métricas ----------
@@ -591,9 +585,9 @@ function escalaAgradable(minimo, maximo, marcas) {
   return { inicio, fin, valores, decimales: Math.max(0, -Math.floor(Math.log10(paso))) };
 }
 
-function dibujarGrafico(figura, { titulo, series, tituloY, formatoValor, epocaSeleccionada }) {
-  const ancho = 560, alto = 300;
-  const margen = { izq: 52, der: 16, sup: 22, inf: 44 };
+// El viewBox se escala al ancho del contenedor; "ancho" solo fija la proporción.
+function dibujarGrafico(figura, { titulo, series, tituloY, formatoValor, epocaSeleccionada, ancho = 560, alto = 320 }) {
+  const margen = { izq: 58, der: 18, sup: 28, inf: 50 };
   const anchoUtil = ancho - margen.izq - margen.der;
   const altoUtil = alto - margen.sup - margen.inf;
 
@@ -609,7 +603,7 @@ function dibujarGrafico(figura, { titulo, series, tituloY, formatoValor, epocaSe
   // Rejilla y eje Y
   ejeY.valores.forEach((valor) => {
     svg.appendChild(crearSvg("line", { class: "rejilla", x1: margen.izq, x2: ancho - margen.der, y1: y(valor), y2: y(valor) }));
-    const texto = crearSvg("text", { class: "marca-texto", x: margen.izq - 8, y: y(valor) + 4, "text-anchor": "end" });
+    const texto = crearSvg("text", { class: "marca-texto", x: margen.izq - 10, y: y(valor) + 4, "text-anchor": "end" });
     texto.textContent = formatear(valor, ejeY.decimales);
     svg.appendChild(texto);
   });
@@ -619,21 +613,21 @@ function dibujarGrafico(figura, { titulo, series, tituloY, formatoValor, epocaSe
   for (let e = 1; e <= epocas; e++) {
     svg.appendChild(crearSvg("line", { class: "eje", x1: x(e), x2: x(e), y1: alto - margen.inf, y2: alto - margen.inf + 4 }));
     if (e === 1 || e % 5 === 0) {
-      const texto = crearSvg("text", { class: "marca-texto", x: x(e), y: alto - margen.inf + 18, "text-anchor": "middle" });
+      const texto = crearSvg("text", { class: "marca-texto", x: x(e), y: alto - margen.inf + 20, "text-anchor": "middle" });
       texto.textContent = e;
       svg.appendChild(texto);
     }
   }
   const tituloX = crearSvg("text", { class: "titulo-eje", x: margen.izq + anchoUtil / 2, y: alto - 6, "text-anchor": "middle" });
   tituloX.textContent = "Época";
-  const tituloEjeY = crearSvg("text", { class: "titulo-eje", transform: `translate(12 ${margen.sup + altoUtil / 2}) rotate(-90)`, "text-anchor": "middle" });
+  const tituloEjeY = crearSvg("text", { class: "titulo-eje", transform: `translate(14 ${margen.sup + altoUtil / 2}) rotate(-90)`, "text-anchor": "middle" });
   tituloEjeY.textContent = tituloY;
   svg.append(tituloX, tituloEjeY);
 
   // Línea vertical en la época seleccionada
   const xs = x(epocaSeleccionada);
   svg.appendChild(crearSvg("line", { class: "linea-seleccion", x1: xs, x2: xs, y1: margen.sup, y2: alto - margen.inf }));
-  const textoSeleccion = crearSvg("text", { class: "texto-seleccion", x: xs - 4, y: margen.sup - 8, "text-anchor": "end" });
+  const textoSeleccion = crearSvg("text", { class: "texto-seleccion", x: xs - 4, y: margen.sup - 10, "text-anchor": "end" });
   textoSeleccion.textContent = `Época seleccionada (${epocaSeleccionada})`;
   svg.appendChild(textoSeleccion);
 
@@ -662,7 +656,11 @@ function dibujarGrafico(figura, { titulo, series, tituloY, formatoValor, epocaSe
         const mitad = globo.offsetWidth / 2;
         const centro = marca.left + marca.width / 2 - caja.left;
         globo.style.left = Math.min(Math.max(centro, mitad), caja.width - mitad) + "px";
-        globo.style.top = (marca.top - caja.top) + "px";
+        // Cerca del borde superior el globo se coloca debajo del punto para no taparse.
+        const arriba = marca.top - caja.top;
+        const debajo = arriba < globo.offsetHeight + 40;
+        globo.classList.toggle("debajo", debajo);
+        globo.style.top = (debajo ? arriba + marca.height : arriba) + "px";
         globo.classList.add("visible");
       });
       zona.addEventListener("mouseleave", () => globo.classList.remove("visible"));
@@ -691,8 +689,14 @@ function crearLeyenda(series) {
   return lista;
 }
 
+// En pantallas angostas se usa un viewBox más estrecho para que el texto no se encoja.
+const pantallaAngosta = window.matchMedia("(max-width: 600px)");
+
 function construirGraficos() {
   const historial = metricas.historial;
+  const angosta = pantallaAngosta.matches;
+  const tamano = angosta ? { ancho: 380, alto: 300 } : { ancho: 560, alto: 320 };
+  const tamanoAncho = angosta ? tamano : { ancho: 1080, alto: 300 };
   const serie = (clave, nombre, color, validacion) => ({
     nombre, color, validacion,
     valores: historial.map((h) => ({ x: h.epoca, y: h[clave] })),
@@ -704,7 +708,7 @@ function construirGraficos() {
   const tresDecimales = (v) => formatear(v, 3);
 
   dibujarGrafico(el("grafico-perdida"), {
-    titulo: "Pérdida por época", tituloY: "Pérdida", formatoValor: tresDecimales, epocaSeleccionada,
+    titulo: "Pérdida por época", tituloY: "Pérdida", formatoValor: tresDecimales, epocaSeleccionada, ...tamano,
     series: [
       serie("perdida_train", "Entrenamiento", azul, false),
       serie("perdida_val", "Validación", ocre, true),
@@ -712,7 +716,7 @@ function construirGraficos() {
   });
 
   dibujarGrafico(el("grafico-exactitud"), {
-    titulo: "Exactitud por época", tituloY: "Exactitud", formatoValor: formatearPorcentaje, epocaSeleccionada,
+    titulo: "Exactitud por época", tituloY: "Exactitud", formatoValor: formatearPorcentaje, epocaSeleccionada, ...tamano,
     series: [
       serie("exactitud_train", "Entrenamiento", azul, false),
       serie("exactitud_val", "Validación", ocre, true),
@@ -721,6 +725,7 @@ function construirGraficos() {
 
   dibujarGrafico(el("grafico-validacion"), {
     titulo: "Métricas de validación por época", tituloY: "Valor", formatoValor: tresDecimales, epocaSeleccionada,
+    ...tamanoAncho,
     series: [
       serie("f1_macro_val", "F1 macro (validación)", azul, true),
       serie("qwk_val", "QWK (validación)", ocre, true),

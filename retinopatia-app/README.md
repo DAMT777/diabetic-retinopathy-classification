@@ -1,8 +1,6 @@
-# Clasificación de retinopatía diabética: interfaz web
+# Clasificación de retinopatía diabética: aplicación web
 
-## 1. Qué es el proyecto
-
-Proyecto académico de Ingeniería de Sistemas. Un modelo EfficientNet-B0, entrenado con el dataset APTOS 2019, clasifica imágenes de fondo de ojo en los 5 niveles de la escala clínica internacional de retinopatía diabética (RD):
+Aplicación con FastAPI, HTML5, CSS3 y JavaScript puro que clasifica una imagen de fondo de ojo en los cinco niveles de la escala clínica internacional de retinopatía diabética (RD) con el modelo EfficientNet-B0 del segundo entrenamiento (checkpoint de la época 20).
 
 | Índice | Nivel | Descripción |
 |---|---|---|
@@ -12,66 +10,60 @@ Proyecto académico de Ingeniería de Sistemas. Un modelo EfficientNet-B0, entre
 | 3 | Severa | Lesiones extensas en toda la retina y zonas con mala irrigación |
 | 4 | Proliferativa | Crecimiento de vasos sanguíneos anormales; riesgo de pérdida de visión |
 
-Desde Moderada (índice 2) la retinopatía se considera **referible**: se recomienda derivar al oftalmólogo.
+Desde Moderada (índice 2) la retinopatía se considera **referible**: se recomienda valoración oftalmológica.
 
-La interfaz permite subir una imagen (o elegir uno de los 10 ejemplos del conjunto de prueba) y muestra el nivel predicho, la probabilidad de cada nivel, si el caso es referible, el diagnóstico real cuando se conoce y la imagen tal como la ve el modelo.
+La interfaz tiene dos pestañas:
 
-El análisis de datos, el entrenamiento y la evaluación se hicieron antes y no forman parte de esta carpeta. Resultados en prueba: exactitud 0,830, F1 macro cercano a 0,63, QWK cercano a 0,88.
+- **Clasificar:** se sube una imagen (clic, arrastrar y soltar o teclado) o se elige uno de los 10 ejemplos del conjunto de prueba. Muestra el nivel estimado, su posición en la escala, la probabilidad de cada nivel, el diagnóstico real cuando la imagen es del conjunto de prueba, y la imagen cargada junto a la que ve el modelo.
+- **Métricas del modelo:** ficha del modelo, métricas principales y de calibración en validación o prueba, métricas por clase, matriz de confusión y curvas de entrenamiento con la época seleccionada.
 
-## 2. Estructura de directorios
+## Estructura
 
 ```
 retinopatia-app/
-├── modelo/efficientnet_b0_final_pesos.pt   Pesos del modelo final (state_dict de PyTorch). Solo lectura.
+├── modelo/efficientnet_b0_final_pesos.pt   Pesos del modelo (state_dict de PyTorch, 16,4 MB). Solo lectura.
 ├── datos/etiquetas_test.csv                Diagnóstico real de las 534 imágenes de prueba. Solo lectura.
-├── datos/predicciones_test.csv             Predicciones de la evaluación oficial, usadas por verificar.py. Solo lectura.
-├── ejemplos/<id_code>.png                  10 imágenes de prueba de 384x384 (5 aciertos y 5 errores). Solo lectura.
-├── static/index.html                       Estructura de la página.
+├── datos/predicciones_test.csv             Predicciones de la evaluación, usadas por verificar.py. Solo lectura.
+├── datos/metricas.json                     Métricas de validación, prueba y entrenamiento. Solo lectura.
+├── ejemplos/<id_code>.png                  10 imágenes de prueba de 384x384, dos por nivel. Solo lectura.
+├── static/index.html                       Estructura de la página y de las dos pestañas.
 ├── static/styles.css                       Estilos, con variables de diseño en :root.
-├── static/app.js                           Lógica del navegador: carga, envío y dibujo del resultado.
-├── retina.py                               Preprocesamiento y predicción. Única fuente de verdad.
+├── static/app.js                           Lógica del navegador: pestañas, envío, resultado, tablas y gráficos SVG.
+├── retina.py                               Preprocesamiento, carga del modelo y predicción.
 ├── main.py                                 API con FastAPI y servidor de archivos estáticos.
-├── verificar.py                            Comprueba que la app reproduce la evaluación oficial.
-├── requirements.txt                        Dependencias de Python (sin torch, que se instala aparte).
-├── .gitignore                              Excluye el entorno virtual y archivos temporales.
-└── README.md                               Este documento.
+├── verificar.py                            Comprueba que la app reproduce la evaluación del modelo.
+└── requirements.txt                        Dependencias de Python (sin torch, que se instala aparte).
 ```
 
-## 3. Arquitectura
+## Arquitectura
 
 ```
  Navegador (index.html + app.js)
-        |
-        |  POST /api/predecir  (multipart, campo "archivo")
+        |  POST /api/predecir (multipart, campo "archivo")
         v
  main.py (FastAPI)
-        |  valida tamaño (15 MB) y que sea imagen
-        |  decodifica en memoria con OpenCV, BGR -> RGB
+        |  valida tamaño (15 MB) y que sea imagen; decodifica en memoria, BGR -> RGB
         v
  retina.py
-        |  1. recortar_y_redimensionar: quita el borde negro, hace cuadrada la foto, 384x384
-        |  2. normalizar_color: resta el desenfoque gaussiano para resaltar lesiones
-        |  3. normaliza con media y desviación de ImageNet y crea el tensor
+        |  1. recorte del borde negro y lienzo cuadrado de 384x384 (si la imagen no mide ya 384x384)
+        |  2. normalización de color: 4*I - 4*desenfoque + 128, calculado solo sobre la retina
+        |  3. normalización con media y desviación de ImageNet
         |  4. EfficientNet-B0 -> softmax -> 5 probabilidades
         v
- main.py
-        |  arma el JSON: predicción, confianza, referible, probabilidades,
-        |  diagnóstico real (si la imagen es del conjunto de prueba) e imagen procesada en base64
-        v
- Navegador: dibuja el resultado
+ main.py: JSON con predicción, probabilidades, diagnóstico real e imagen procesada en base64
+
+ Pestaña de métricas:  GET /api/metricas  ->  datos/metricas.json + tiempo de inferencia medido
 ```
 
-El frontend y la API se sirven desde el mismo servidor y el mismo origen.
+## Preprocesamiento y verificación
 
-## 4. Por qué el preprocesamiento no debe modificarse
+El modelo solo da probabilidades confiables si recibe imágenes procesadas exactamente como en su entrenamiento, por eso todo el preprocesamiento está en `retina.py` y no se modifica.
 
-Una red neuronal aprende a partir de imágenes con unas características concretas: recorte, tamaño, contraste y normalización. Si en producción recibe imágenes procesadas de otra forma, sigue entregando probabilidades sin ningún error visible, pero esas probabilidades ya no son confiables. Por eso `retina.py` es una copia exacta del código usado al entrenar y evaluar, y nadie más implementa preprocesamiento.
+Las fotos originales pasan por el recorte completo. Las imágenes que ya miden 384x384 (los ejemplos de la galería y las de `prueba_384/`) ya fueron recortadas en el preprocesamiento del proyecto, así que solo reciben la normalización de color: recortarlas otra vez cambiaría la imagen que ve el modelo. Las fotos originales nunca miden 384x384, de modo que ambos casos reproducen exactamente el preprocesamiento del entrenamiento.
 
-`verificar.py` lo comprueba: clasifica las 10 imágenes de `ejemplos/` y compara con las predicciones de la evaluación oficial (`datos/predicciones_test.csv`). El criterio es que coincidan las 10 clases y que la diferencia máxima de probabilidad sea menor a 0,01 (no es exactamente 0 porque la evaluación usó precisión mixta en GPU y aquí se calcula en CPU con 32 bits).
+`verificar.py` lo comprueba: clasifica las 10 imágenes de `ejemplos/` y las compara con `datos/predicciones_test.csv`. El criterio es 10 de 10 clases iguales y una diferencia máxima de probabilidad menor a 0,01 (no es 0 porque la evaluación usó precisión mixta en GPU y la app calcula en CPU con 32 bits). Resultado actual: 10 de 10 y diferencia máxima de 0,0028.
 
-**Resultado actual:** las 10 clases coinciden, pero la diferencia máxima es 0,147, por lo que el script informa "verificación FALLIDA" y una nota explicativa. La causa conocida y aceptada es esta: los PNG de `ejemplos/` ya están recortados a 384x384 con franjas negras, y `retina.predecir` los vuelve a recortar y redimensionar. La evaluación oficial partió de las fotos originales, de mayor resolución, así que esta segunda interpolación cambia levemente algunos píxeles. El efecto solo se nota en los casos donde el modelo no estaba saturado (por ejemplo 0,73 o 0,83 en la evaluación); en los casos cercanos al 100% la diferencia es prácticamente nula. Con las fotos originales la diferencia debería quedar por debajo de 0,01.
-
-## 5. Instalación
+## Instalación
 
 Requiere Python 3.10 o superior.
 
@@ -82,37 +74,39 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 ```
 
-`torch` se instala desde el índice de CPU para no descargar las librerías de GPU, que pesan varios GB. `torchvision` también se instala desde ese índice: `timm` lo necesita, y si se descarga desde PyPI su versión no coincide con el `torch` de CPU y aparece el error `operator torchvision::nms does not exist`.
+`torch` y `torchvision` se instalan desde el índice de CPU para no descargar las librerías de GPU. `torchvision` debe venir del mismo índice: si se descarga desde PyPI no coincide con el `torch` de CPU y aparece el error `operator torchvision::nms does not exist`.
 
-## 6. Cómo ejecutar
+## Ejecución
 
 ```bash
 python verificar.py
 uvicorn main:app --reload
 ```
 
-- Interfaz: http://localhost:8000
-- Documentación automática de la API: http://localhost:8000/docs
-- Para abrirla desde un celular en la misma red Wi-Fi: `uvicorn main:app --host 0.0.0.0 --port 8000` y en el celular abrir `http://<IP-del-computador>:8000` (la IP se consulta con `ip addr` en Linux, `ipconfig` en Windows o `ifconfig` en macOS).
+Al arrancar, el servidor carga el modelo una vez y mide el tiempo de inferencia en CPU (2 predicciones de calentamiento y la mediana de 10 medidas); en el equipo de desarrollo fue de unos 310 ms.
 
-## 7. Endpoints
+- Interfaz: http://localhost:8000 (pestaña de métricas: http://localhost:8000/#metricas)
+- Documentación automática de la API: http://localhost:8000/docs
+- Desde un celular en la misma red: `uvicorn main:app --host 0.0.0.0 --port 8000` y abrir `http://<IP-del-computador>:8000`.
+
+## Endpoints
 
 ### `POST /api/predecir`
 
-Formulario multipart con un único campo de archivo llamado `archivo`.
+Formulario multipart con el campo de archivo `archivo`. Ejemplo con `ejemplos/a8652b2de23f.png`:
 
 ```json
 {
   "prediccion": "Moderada",
   "indice": 2,
-  "confianza": 0.793,
+  "confianza": 0.991,
   "referible": true,
   "probabilidades": [
-    {"indice": 0, "clase": "Sin RD", "probabilidad": 0.0},
-    {"indice": 1, "clase": "Leve", "probabilidad": 0.0},
-    {"indice": 2, "clase": "Moderada", "probabilidad": 0.793},
-    {"indice": 3, "clase": "Severa", "probabilidad": 0.200},
-    {"indice": 4, "clase": "Proliferativa", "probabilidad": 0.007}
+    {"indice": 0, "clase": "Sin RD", "probabilidad": 0.000},
+    {"indice": 1, "clase": "Leve", "probabilidad": 0.001},
+    {"indice": 2, "clase": "Moderada", "probabilidad": 0.991},
+    {"indice": 3, "clase": "Severa", "probabilidad": 0.000},
+    {"indice": 4, "clase": "Proliferativa", "probabilidad": 0.008}
   ],
   "real": "Moderada",
   "coincide": true,
@@ -120,15 +114,15 @@ Formulario multipart con un único campo de archivo llamado `archivo`.
 }
 ```
 
-`real` y `coincide` se obtienen buscando el nombre del archivo (sin extensión) en `datos/etiquetas_test.csv`; si la imagen no es del conjunto de prueba valen `null`.
+`real` y `coincide` se obtienen buscando el nombre del archivo sin extensión en `datos/etiquetas_test.csv`; si la imagen no es del conjunto de prueba valen `null`. Errores: 413 si la imagen supera 15 MB y 400 si el archivo no es una imagen válida.
 
-Errores:
-- 413 `{"detail": "La imagen supera el tamaño máximo de 15 MB."}`
-- 400 `{"detail": "El archivo no es una imagen válida."}`
+### `GET /api/metricas`
+
+Devuelve `datos/metricas.json` con el campo `tiempo_ms` agregado: modelo, parámetros, tamaño, época seleccionada, criterio de selección, validación cruzada, bloques `validacion` y `prueba` (exactitud, exactitud balanceada, F1 macro, QWK, mAP, AUC macro, sensibilidad y especificidad referible, pérdida, Brier, ECE, confianza media en los errores, métricas por clase y matriz de confusión) e `historial` por época. La app no recalcula métricas: muestra las de la evaluación.
 
 ### `GET /api/ejemplos`
 
-Lista de ejemplos ordenada por diagnóstico real y luego por nombre:
+Lista de ejemplos ordenada por diagnóstico real:
 
 ```json
 [{"nombre": "b9bc81fcb075.png", "id_code": "b9bc81fcb075", "real": "Sin RD"}, ...]
@@ -140,18 +134,20 @@ Lista de ejemplos ordenada por diagnóstico real y luego por nombre:
 {"estado": "ok", "modelo": "efficientnet_b0", "clases": 5}
 ```
 
-## 8. Decisiones técnicas
+## Decisiones técnicas
 
-- **`def` y no `async def` en la predicción.** La inferencia es cálculo pesado en la CPU. Si la función fuera `async`, se ejecutaría en el bucle de eventos y bloquearía todas las demás peticiones mientras dura. Con `def`, FastAPI la ejecuta en un hilo aparte y el servidor sigue respondiendo.
-- **El modelo se carga una sola vez.** Construir la red y leer 16 MB de pesos tarda; hacerlo en cada petición haría la app lenta. Por eso el modelo y las etiquetas se cargan al importar `main.py`.
-- **Las barras siguen el orden de la escala.** Los niveles son ordinales: Moderada está entre Leve y Severa. Si las barras se ordenaran por probabilidad se perdería esa información; en el orden de la escala se ve de inmediato si el modelo dudaba entre niveles vecinos (lo esperable) o entre niveles lejanos.
-- **No hay CORS.** El navegador solo exige CORS cuando una página pide datos a otro origen. Aquí la página y la API se sirven desde el mismo servidor, así que no hace falta y no se abre la API a otros sitios.
-- **Se muestra la imagen normalizada.** Es lo que realmente recibe el modelo. Permite comprobar que el recorte fue correcto y entender por qué una foto mal iluminada o mal centrada puede dar un resultado extraño.
-- **Rutas con `Path(__file__).parent`.** La app funciona sin importar desde qué carpeta se ejecute.
-- **Textos con `textContent`.** El frontend nunca inserta HTML proveniente de la API, lo que evita inyecciones de código.
+- **`def` y no `async def` en la predicción.** La inferencia ocupa la CPU; con `def`, FastAPI la ejecuta en un hilo aparte y el servidor sigue atendiendo otras peticiones.
+- **El modelo se carga una sola vez**, al importar `main.py`, junto con las etiquetas y las métricas.
+- **Las barras siguen el orden de la escala**, nunca se ordenan por probabilidad: los niveles son ordinales y así se ve si el modelo dudaba entre niveles vecinos.
+- **Se muestra la imagen normalizada**, que es lo que realmente recibe el modelo.
+- **Sin CORS**: la página y la API se sirven desde el mismo origen.
+- **Pestañas en la URL** (`#clasificar` y `#metricas`), para que se mantengan al recargar.
+- **Gráficos SVG sin librerías**, con `viewBox` para adaptarse al ancho.
+- **Textos con `textContent`**: el frontend nunca inserta HTML proveniente de la API.
 
-## 9. Limitaciones
+## Limitaciones
 
-- Es una herramienta académica y no reemplaza el diagnóstico de un oftalmólogo.
-- El modelo es **sobreconfiado**: muchos de sus errores tienen probabilidades cercanas al 100%. Un 99% no garantiza que la predicción sea correcta. De los 10 ejemplos incluidos, 5 son errores, varios con confianza mayor al 99%.
-- Los resultados solo son válidos para imágenes de fondo de ojo similares a las de APTOS 2019 (cámaras, iluminación y población de ese dataset). Cualquier otra imagen recibirá igualmente una predicción, pero sin sentido clínico.
+- Herramienta académica: no reemplaza el diagnóstico de un oftalmólogo.
+- El modelo es sobreconfiado: muchos de sus errores tienen probabilidades cercanas al 100%.
+- Rinde peor en las clases con pocas imágenes, sobre todo Severa.
+- Los resultados solo son válidos para imágenes similares a las de APTOS 2019.

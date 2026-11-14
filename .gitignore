@@ -34,3 +34,9 @@ kaggle.json
 Thumbs.db
 *.swp
 *.log
+
+# Fuente local del informe: la versión final se edita en Overleaf y su PDF está en docs/
+informe/
+
+# Plantilla de ejemplo de Springer LNCS
+Notebooks/kzwwpvhwnvfj.pdf

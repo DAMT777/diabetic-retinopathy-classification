@@ -23,7 +23,6 @@
     <main class="contenedor principal">
       <!-- Panel de carga -->
       <section class="panel panel-carga" aria-labelledby="titulo-carga">
-        <p class="paso">Paso 1</p>
         <h2 id="titulo-carga">Elige una imagen</h2>
 
         <label class="zona-carga" id="zona-carga" tabindex="0">
@@ -41,46 +40,42 @@
           </span>
         </label>
 
-        <div class="separador"><span>o prueba con un ejemplo</span></div>
+        <h3 class="subtitulo subtitulo-galeria">Ejemplos del conjunto de prueba</h3>
 
         <div class="galeria" id="galeria" aria-label="Ejemplos del conjunto de prueba"></div>
       </section>
 
       <!-- Panel de resultado -->
       <section class="panel panel-resultado" id="panel-resultado" aria-labelledby="titulo-resultado" aria-live="polite">
-        <p class="paso">Paso 2</p>
-        <h2 id="titulo-resultado">Resultado</h2>
+        <h2 id="titulo-resultado">Resultado del análisis</h2>
 
         <div class="estado" id="estado-inicial">
-          <p class="texto-suave">Carga una imagen o elige uno de los ejemplos para ver el nivel de retinopatía estimado.</p>
-          <ol class="pasos">
-            <li><strong>Carga</strong><span>Sube una foto de fondo de ojo o elige un ejemplo.</span></li>
-            <li><strong>Preprocesamiento</strong><span>La imagen se recorta, se lleva a 384 por 384 píxeles y se normaliza su color.</span></li>
-            <li><strong>Lectura</strong><span>Revisa el nivel estimado, la probabilidad de cada nivel y si el caso es referible.</span></li>
-          </ol>
+          <div class="vacio">
+            <p class="vacio-titulo">Todavía no hay un análisis</p>
+            <p class="vacio-texto">Carga una imagen o elige un ejemplo para ver el nivel estimado y la probabilidad de cada nivel.</p>
+          </div>
           <div class="escala escala-vacia" id="escala-inicial" aria-hidden="true"></div>
         </div>
 
         <div class="estado" id="estado-analizando" hidden>
           <p class="analizando-titulo">Analizando la imagen...</p>
-          <p class="texto-suave pequeno">Recortando, normalizando el color y ejecutando el modelo.</p>
+          <p class="texto-suave">Recortando, normalizando el color y ejecutando el modelo.</p>
           <div class="progreso" role="progressbar" aria-label="Analizando la imagen"><div class="progreso-barra"></div></div>
         </div>
 
         <div class="estado" id="estado-error" hidden>
           <p class="mensaje-error" id="mensaje-error"></p>
-          <button type="button" class="boton" id="boton-reintentar">Intentar de nuevo</button>
+          <button type="button" class="boton boton-secundario" id="boton-reintentar">Intentar de nuevo</button>
         </div>
 
         <div class="estado" id="estado-resultado" hidden>
           <div class="resumen">
-            <div class="resumen-texto">
-              <p class="etiqueta-nivel">Nivel estimado</p>
+            <p class="etiqueta-nivel">Nivel estimado</p>
+            <div class="resumen-fila">
               <p class="prediccion" id="prediccion-nombre"></p>
-              <p class="pastilla" id="referible"></p>
             </div>
+            <p class="real" id="diagnostico-real" hidden></p>
           </div>
-          <p class="real" id="diagnostico-real" hidden></p>
 
           <h3 class="subtitulo">Posición en la escala</h3>
           <div class="escala" id="escala"></div>
@@ -88,8 +83,7 @@
           <h3 class="subtitulo">Probabilidad por nivel</h3>
           <div class="barras" id="barras"></div>
 
-          <h3 class="subtitulo">Lo que ve el modelo</h3>
-          <p class="texto-suave pequeno">A la derecha está la imagen después del preprocesamiento: recortada, cuadrada, de 384 por 384 píxeles y con el color normalizado para resaltar lesiones.</p>
+          <h3 class="subtitulo">Imagen analizada</h3>
           <div class="imagenes-resultado">
             <figure>
               <img id="imagen-original" alt="Imagen de fondo de ojo tal como se cargó">
@@ -106,19 +100,6 @@
       </section>
     </main>
 
-    <section class="contenedor">
-      <details class="panel guia">
-        <summary>Cómo leer el resultado</summary>
-        <dl class="niveles">
-          <div class="nivel"><dt><span class="nivel-num">0</span>Sin RD</dt><dd>No se observan signos de retinopatía.</dd></div>
-          <div class="nivel"><dt><span class="nivel-num">1</span>Leve</dt><dd>Solo microaneurismas, pequeños puntos rojos en la retina.</dd></div>
-          <div class="nivel"><dt><span class="nivel-num">2</span>Moderada</dt><dd>Hemorragias y exudados más numerosos.</dd></div>
-          <div class="nivel"><dt><span class="nivel-num">3</span>Severa</dt><dd>Lesiones extensas en toda la retina y zonas con mala irrigación.</dd></div>
-          <div class="nivel"><dt><span class="nivel-num">4</span>Proliferativa</dt><dd>Crecimiento de vasos sanguíneos anormales; riesgo de pérdida de visión.</dd></div>
-        </dl>
-        <p>Se considera <strong>referible</strong> la retinopatía Moderada o más grave: en esos casos se recomienda derivar al paciente al oftalmólogo. Sin RD y Leve corresponden a control de rutina.</p>
-      </details>
-    </section>
   </div>
 
   <!-- ==================== Pestaña Métricas del modelo ==================== -->
@@ -129,11 +110,15 @@
       <div id="metricas-contenido" hidden>
         <!-- 1. Ficha del modelo -->
         <section class="panel" aria-labelledby="titulo-ficha">
-          <p class="paso">Modelo</p>
-          <h2 id="titulo-ficha">EfficientNet-B0</h2>
+          <div class="ficha-cabecera">
+            <p class="etiqueta-nivel">Arquitectura</p>
+            <h2 id="titulo-ficha">EfficientNet-B0</h2>
+          </div>
           <dl class="ficha" id="ficha"></dl>
-          <p class="texto-suave ficha-criterio" id="ficha-criterio"></p>
-          <p class="texto-suave pequeno" id="validacion-cruzada"></p>
+          <dl class="ficha-notas">
+            <div><dt>Selección del checkpoint</dt><dd id="ficha-criterio"></dd></div>
+            <div><dt>Validación cruzada</dt><dd id="validacion-cruzada"></dd></div>
+          </dl>
         </section>
 
         <!-- Selector de conjunto: afecta a las secciones 2 a 5 -->
@@ -143,7 +128,7 @@
             <label class="opcion"><input type="radio" name="conjunto" value="validacion" checked><span>Validación</span></label>
             <label class="opcion"><input type="radio" name="conjunto" value="prueba"><span>Prueba</span></label>
           </div>
-          <span class="texto-suave pequeno">Se aplica a las métricas principales, la calibración, las métricas por clase y la matriz de confusión.</span>
+          <span class="texto-suave pequeno">Afecta a las métricas, la calibración, la tabla por clase y la matriz de confusión.</span>
         </div>
 
         <!-- 2. Métricas principales -->
