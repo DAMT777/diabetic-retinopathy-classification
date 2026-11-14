@@ -50,13 +50,6 @@ def main():
 
     correcto = coincidencias == len(rutas) == 10 and dif_global < TOLERANCIA
     print("RESULTADO: " + ("verificacion superada" if correcto else "verificacion FALLIDA"))
-    if not correcto and coincidencias == len(rutas):
-        # Diferencia conocida y aceptada: los PNG de ejemplos/ ya estan recortados a 384x384,
-        # y retina.predecir los vuelve a recortar y redimensionar. La evaluacion oficial partio
-        # de las fotos originales, asi que esa segunda interpolacion cambia algunos pixeles.
-        # Solo se nota en los casos donde el modelo no estaba saturado cerca del 100%.
-        print("NOTA: todas las clases coinciden. La diferencia en probabilidades se explica por el")
-        print("      doble recorte de los ejemplos ya preprocesados (ver README, seccion 4).")
     sys.exit(0 if correcto else 1)
 
 

@@ -1,5 +1,8 @@
 """API y servidor web para clasificar retinopatia diabetica con EfficientNet-B0."""
 import base64
+import json
+import statistics
+import time
 from pathlib import Path
 
 import cv2
@@ -15,6 +18,7 @@ import retina
 BASE = Path(__file__).parent
 RUTA_PESOS = BASE / "modelo" / "efficientnet_b0_final_pesos.pt"
 RUTA_ETIQUETAS = BASE / "datos" / "etiquetas_test.csv"
+RUTA_METRICAS = BASE / "datos" / "metricas.json"
 DIR_EJEMPLOS = BASE / "ejemplos"
 DIR_STATIC = BASE / "static"
 
@@ -24,8 +28,8 @@ INDICE_REFERIBLE = 2  # desde Moderada se recomienda derivar al oftalmologo
 # Inferencia en CPU: el modelo es pequeno y asi la app corre en cualquier equipo.
 DEVICE = torch.device("cpu")
 
-# Modelo y etiquetas se cargan una sola vez al iniciar. Cargarlos en cada
-# peticion tardaria segundos y desperdiciaria memoria.
+# Modelo, etiquetas y metricas se cargan una sola vez al iniciar. Cargarlos en
+# cada peticion tardaria segundos y desperdiciaria memoria.
 MODELO = retina.cargar_modelo(RUTA_PESOS, DEVICE)
 ETIQUETAS = (
     pd.read_csv(RUTA_ETIQUETAS, dtype={"id_code": str})
@@ -33,8 +37,31 @@ ETIQUETAS = (
     .astype(int)
     .to_dict()
 )
+# Las metricas vienen de la evaluacion del entrenamiento; la app solo las muestra.
+METRICAS = json.loads(RUTA_METRICAS.read_text(encoding="utf-8"))
 
-app = FastAPI(title="Clasificacion de retinopatia diabetica", version="1.0")
+
+def medir_tiempo(modelo, img_rgb, calentamiento=2, repeticiones=10):
+    """Mediana en ms de la llamada completa a retina.predecir (preprocesamiento + modelo).
+
+    Las primeras llamadas no se cuentan porque incluyen reservas de memoria e
+    inicializaciones internas de PyTorch. La mediana resiste picos aislados.
+    """
+    for _ in range(calentamiento):
+        retina.predecir(modelo, img_rgb, DEVICE)
+    tiempos = []
+    for _ in range(repeticiones):
+        inicio = time.perf_counter()
+        retina.predecir(modelo, img_rgb, DEVICE)
+        tiempos.append((time.perf_counter() - inicio) * 1000)
+    return statistics.median(tiempos)
+
+
+_img_prueba = cv2.cvtColor(cv2.imread(str(sorted(DIR_EJEMPLOS.glob("*.png"))[0])), cv2.COLOR_BGR2RGB)
+TIEMPO_MS = round(medir_tiempo(MODELO, _img_prueba), 1)
+print(f"Tiempo de inferencia en CPU (mediana de 10 medidas): {TIEMPO_MS:.1f} ms")
+
+app = FastAPI(title="Clasificacion de retinopatia diabetica", version="2.0")
 
 
 def imagen_a_data_url(img_rgb):
@@ -83,6 +110,12 @@ def predecir(archivo: UploadFile = File(...)):
         "coincide": bool(real_idx == indice) if real_idx is not None else None,
         "imagen_modelo": imagen_a_data_url(normalizada),
     }
+
+
+@app.get("/api/metricas")
+def metricas():
+    # Copia para no alterar el diccionario cargado al iniciar.
+    return {**METRICAS, "tiempo_ms": TIEMPO_MS}
 
 
 @app.get("/api/ejemplos")

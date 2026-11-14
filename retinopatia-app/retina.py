@@ -63,7 +63,13 @@ def cargar_modelo(ruta_pesos, device):
 
 @torch.no_grad()
 def predecir(modelo, img_rgb, device):
-    recortada = recortar_y_redimensionar(img_rgb)
+    # Las imágenes de 384x384 ya fueron recortadas y redimensionadas en el
+    # preprocesamiento (galería y prueba_384). Recortarlas otra vez cambiaría
+    # la imagen que ve el modelo. Las fotos originales nunca miden 384x384.
+    if img_rgb.shape[:2] == (TAM, TAM):
+        recortada = img_rgb
+    else:
+        recortada = recortar_y_redimensionar(img_rgb)
     normalizada = normalizar_color(recortada)
     x = _transformar(image=normalizada)["image"].unsqueeze(0).to(device)
     probs = modelo(x).float().softmax(1)[0].cpu().numpy()
