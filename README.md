@@ -7,8 +7,7 @@ Proyecto académico de Ingeniería de Sistemas (Universidad de los Llanos). Clas
 ```
 Notebooks/          Análisis, partición, entrenamiento y figuras (Kaggle y Google Colab).
 retinopatia-app/    Aplicación web (FastAPI + HTML, CSS y JavaScript) con el modelo final.
-docs/               Informe en PDF (formato LNCS), capturas de la interfaz, gráficas y tablas.
-scripts/            Scripts que generan las capturas, gráficas y tablas de docs/.
+docs/               Informe final en PDF (formato Springer LNCS).
 ```
 
 Quedan fuera de Git, por tamaño o por ser locales: `prueba_384/` (las 534 imágenes de prueba preprocesadas), `respaldo_app_v1/` (archivos de la primera versión de la app) y los entornos virtuales.
@@ -58,7 +57,7 @@ python verificar.py
 uvicorn main:app --reload
 ```
 
-Luego se abre http://localhost:8000. Los detalles de la app, la API y las decisiones técnicas están en [`retinopatia-app/README.md`](retinopatia-app/README.md), y el material del informe en [`docs/README.md`](docs/README.md).
+Luego se abre http://localhost:8000. Los detalles de la app, la API y las decisiones técnicas están en [`retinopatia-app/README.md`](retinopatia-app/README.md).
 
 ## Limitaciones
 

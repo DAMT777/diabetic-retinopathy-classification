@@ -40,3 +40,7 @@ informe/
 
 # Plantilla de ejemplo de Springer LNCS
 Notebooks/kzwwpvhwnvfj.pdf
+
+# Material de apoyo local del informe (capturas, gráficas y tablas) y scripts que lo generan
+material_informe/
+scripts/
