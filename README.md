@@ -7,10 +7,10 @@ Proyecto académico de Ingeniería de Sistemas (Universidad de los Llanos). Clas
 ```
 Notebooks/          Análisis, partición, entrenamiento y figuras (Kaggle y Google Colab).
 retinopatia-app/    Aplicación web (FastAPI + HTML, CSS y JavaScript) con el modelo final.
-docs/               Informe final en PDF (formato Springer LNCS).
+docs/               Informe final en PDF (formato Springer LNCS) y diapositivas de la presentación.
 ```
 
-Quedan fuera de Git, por tamaño o por ser locales: `prueba_384/` (las 534 imágenes de prueba preprocesadas), `respaldo_app_v1/` (archivos de la primera versión de la app) y los entornos virtuales.
+Quedan fuera de Git, por tamaño o por ser locales: `prueba_384/` (las 534 imágenes de prueba preprocesadas) y los entornos virtuales.
 
 ## Flujo del proyecto
 
