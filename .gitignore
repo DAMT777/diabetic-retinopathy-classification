@@ -1,5 +1,6 @@
 # Entornos virtuales (se recrean con requirements.txt)
 .venv/
+**/.venv/
 venv/
 env/
 
@@ -12,12 +13,15 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
-# Dataset completo y derivados: pesan mucho y APTOS 2019 se descarga de Kaggle.
-# Las imagenes de ejemplo de retinopatia-app/ejemplos/ si se suben.
+# Imagenes de prueba completas: pesan mucho y APTOS 2019 se descarga de Kaggle.
+# Las 10 imagenes de retinopatia-app/ejemplos/ si se suben.
 prueba_384/
 train_images/
 test_images/
 *.zip
+
+# Respaldo local de la primera version de la app (modelos v1 y ResNet-50)
+respaldo_app_v1/
 
 # Credenciales
 kaggle.json
@@ -30,8 +34,3 @@ kaggle.json
 Thumbs.db
 *.swp
 *.log
-
-# Archivos de ResNet-50 (comparacion de modelos descartada; se conservan solo en local)
-retinopatia-app/modelo/resnet50_final_pesos.pt
-retinopatia-app/datos/metricas.json
-retinopatia-app/datos/predicciones_test_resnet50.csv
