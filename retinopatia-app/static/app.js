@@ -10,6 +10,9 @@ const zonaCarga = el("zona-carga");
 const entradaArchivo = el("entrada-archivo");
 const vistaPrevia = el("vista-previa");
 const galeria = el("galeria");
+const metadatosArchivo = el("metadatos-archivo");
+const imagenOriginal = el("imagen-original");
+const imagenModelo = el("imagen-modelo");
 
 const ESTADOS = ["estado-inicial", "estado-analizando", "estado-resultado", "estado-error"];
 let urlPrevia = null;
@@ -61,14 +64,37 @@ function reiniciar() {
 
 // ---------- Vista previa ----------
 
+function formatearPeso(bytes) {
+  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  return Math.max(1, Math.round(bytes / 1024)) + " KB";
+}
+
 function mostrarVistaPrevia(archivo) {
   // Se libera la URL anterior para no acumular memoria.
   if (urlPrevia) URL.revokeObjectURL(urlPrevia);
   urlPrevia = URL.createObjectURL(archivo);
   vistaPrevia.src = urlPrevia;
   el("nombre-archivo").textContent = archivo.name;
+  // El peso se muestra de inmediato; las dimensiones, al decodificar.
+  metadatosArchivo.textContent = formatearPeso(archivo.size);
+  const sonda = new Image();
+  sonda.onload = () => {
+    metadatosArchivo.textContent =
+      sonda.naturalWidth + " × " + sonda.naturalHeight + " px · " + formatearPeso(archivo.size);
+  };
+  sonda.src = urlPrevia;
   el("zona-vacia").hidden = true;
   el("zona-cargada").hidden = false;
+}
+
+// ---------- Visor: vista original o vista del modelo ----------
+
+function activarVista(vista) {
+  document.querySelectorAll("#selector-vista .segmentado-opcion").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.vista === vista));
+  });
+  imagenOriginal.classList.toggle("activa", vista === "original");
+  imagenModelo.classList.toggle("activa", vista === "modelo");
 }
 
 // ---------- Validación y envío ----------
@@ -218,6 +244,7 @@ function mostrarResultado(datos) {
 
   el("imagen-original").src = urlPrevia;
   el("imagen-modelo").src = datos.imagen_modelo;
+  activarVista("original");
   mostrarEstado("estado-resultado");
 }
 
@@ -313,5 +340,19 @@ document.addEventListener("DOMContentLoaded", () => {
   construirEscala(el("escala-inicial"), -1, -1);
   el("boton-otra").addEventListener("click", reiniciar);
   el("boton-reintentar").addEventListener("click", reiniciar);
+  el("boton-eliminar").addEventListener("click", reiniciar);
+
+  // Control segmentado del visor: original o imagen procesada.
+  document.querySelectorAll("#selector-vista .segmentado-opcion").forEach((b) => {
+    b.addEventListener("click", () => activarVista(b.dataset.vista));
+  });
+
+  // El botón de información abre y lleva la vista hasta la guía.
+  el("boton-info").addEventListener("click", () => {
+    const guia = el("guia");
+    guia.open = true;
+    guia.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   cargarGaleria();
 });
